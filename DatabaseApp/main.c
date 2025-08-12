@@ -3,6 +3,8 @@
 //BOOLS TOO?????????? (check InputBuffer.h for initial amazement)
 #include <stdbool.h>
 #include "InputBuffer.h"
+#include "MetaCommand.h"
+#include "Statement.h"
 //Quick function for handling our input prompt.
 void print_prompt() { printf("db > "); }
 
@@ -85,13 +87,28 @@ int main(int argc, char* argv[]) {
 	while (true) {
 		print_prompt();
 		read_input(input_buffer);
-		if (strcmp(input_buffer->buffer, ".exit") == 0) {
-			close_input_buffer(input_buffer);
-			exit(EXIT_SUCCESS);
+		//Seperate out meta commands (.help, .tables, etc.) by checking if the first element in the buffer is a dot
+		if (input_buffer->buffer[0] == '.') {
+			switch (do_meta_command(input_buffer)) {
+			case (META_COMMAND_SUCCESS):
+				continue;
+			case (META_COMMAND_UNRECOGNIZED_COMMAND):
+				printf("Unrecognized command '%s' .\n", input_buffer->buffer);
+				continue;
+			}
 		}
-		else {
-			printf("Unrecognized command '%s' .\n", input_buffer->buffer);
+		//Check if input is a non-meta valid statement, if not restart the loop and print the error.
+		Statement statement;
+		switch (prepare_statement(input_buffer, &statement)) {
+		case(PREPARE_SUCCESS):
+			break;
+		case(PREPARE_UNRECOGNIZED_STATEMENT):
+			printf("Unrecognized keyword at start of '%s'.\n", input_buffer->buffer);
+			continue;
 		}
+		//If we reached here we have a valid non-meta statement, so execute!
+		execute_statement(&statement);
+		printf("Executed.\n");
 	}
 	return 0;
 }
