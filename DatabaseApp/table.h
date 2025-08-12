@@ -11,8 +11,9 @@ typedef struct {
 	//Why would we use this?
 	//It guarentees a size of 32 bits, making it helpful for use across platforms
 	uint32_t id;
-	char username[COLUMN_USERNAME_SIZE];
-	char email[COLUMN_EMAIL_SIZE];
+	//include +1 for null character
+	char username[COLUMN_USERNAME_SIZE + 1];
+	char email[COLUMN_EMAIL_SIZE + 1];
 } Row;
 
 //Macro for computing the bytes of an attribute (id, username, etc.) from a struct (Row) at compile time.

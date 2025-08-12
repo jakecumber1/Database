@@ -2,22 +2,13 @@
 //strncmp, strcmp, etc.
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 //Parse statement for execution
 PrepareResult prepare_statement(InputBuffer* input_buffer, Statement* statement) {
 	//We haven't seen this string function yet, what does it do?
 	//strncmp compares two strings and an n number of characters, it will return 0 if the characters exactly match
 	if (strncmp(input_buffer->buffer, "insert", 6) == 0) {
-		statement->type = STATEMENT_INSERT;
-		//there's a similar function to this called 'scanf' it has similar behavior but for stdin instead of existing strings
-		//%d = digit %s = sequence of non-white space characters
-		//So basically, match the string to "insert digit word word" the int returned is the number of % matched.
-		int args_assigned = sscanf(input_buffer->buffer, "insert %d %s %s", &(statement->row_to_insert.id), 
-			statement->row_to_insert.username, statement->row_to_insert.email);
-		//One of the args in the statement is missing.
-		if (args_assigned < 3) {
-			return PREPARE_SYNATAX_ERROR;
-		}
-		return PREPARE_SUCCESS;
+		return prepare_insert(input_buffer, statement);
 	}
 	if (strncmp(input_buffer->buffer, "select", 6) == 0) {
 		statement->type = STATEMENT_SELECT;
@@ -25,7 +16,35 @@ PrepareResult prepare_statement(InputBuffer* input_buffer, Statement* statement)
 	}
 	return PREPARE_UNRECOGNIZED_STATEMENT;
 }
+PrepareResult prepare_insert(InputBuffer* input_buffer, Statement* statement) {
+	statement->type = STATEMENT_INSERT;
+	//Converts our input buffer from a string into null terminated tokens (char arrays) based on a delimiter (space in this case).
+	char* keyword = strtok(input_buffer->buffer, " ");
+	char* id_string = strtok(NULL, " ");
+	char* username = strtok(NULL, " ");
+	char* email = strtok(NULL, " ");
 
+	if (id_string == NULL || username == NULL || email == NULL) {
+		return PREPARE_SYNTAX_ERROR;
+	}
+	//atoi = ascii to int, convert our null terminated char array to a int value for our id.
+	int id = atoi(id_string);
+	if (strlen(username) > COLUMN_USERNAME_SIZE) {
+		return PREPARE_STRING_TOO_LONG;
+	}
+	if (strlen(email) > COLUMN_EMAIL_SIZE) {
+		return PREPARE_STRING_TOO_LONG;
+	}
+	statement->row_to_insert.id = id;
+	if (id < 0) {
+		return PREPARE_NEGATIVE_ID;
+	}
+
+	strcpy_s(statement->row_to_insert.username, COLUMN_USERNAME_SIZE, username);
+	strcpy_s(statement->row_to_insert.email, COLUMN_EMAIL_SIZE, email);
+
+	return PREPARE_SUCCESS;
+}
 ExecuteResult execute_insert(Statement* statement, Table* table) {
 	if (table->num_rows >= TABLE_MAX_ROWS) {
 		return EXECUTE_TABLE_FULL;

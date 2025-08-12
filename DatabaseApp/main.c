@@ -104,11 +104,17 @@ int main(int argc, char* argv[]) {
 		switch (prepare_statement(input_buffer, &statement)) {
 		case(PREPARE_SUCCESS):
 			break;
-		case(PREPARE_SYNATAX_ERROR):
+		case(PREPARE_SYNTAX_ERROR):
 			printf("Syntax error. Could not parse statement.");
 			continue;
 		case(PREPARE_UNRECOGNIZED_STATEMENT):
 			printf("Unrecognized keyword at start of '%s'.\n", input_buffer->buffer);
+			continue;
+		case(PREPARE_STRING_TOO_LONG):
+			printf("String input is too long.\n");
+			continue;
+		case(PREPARE_NEGATIVE_ID):
+			printf("ID must be positive.\n");
 			continue;
 		}
 		//If we reached here we have a valid non-meta statement, so execute!
