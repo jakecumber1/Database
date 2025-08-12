@@ -81,6 +81,8 @@ int main(int argc, char* argv[]) {
 	//Similar to my MTG Deck builder project, this is my first real C project (first C project ever in fact)
 	//So expect a significant amount of comments (I'd argue too many for anyone familiar with the langauge)
 
+	Table* table = new_table();
+
 	//Putting the input buffer into it's own header and c file is overkill, this is just to get me comfy with the conventions
 	InputBuffer* input_buffer = new_input_buffer();
 	//while loop for handling user inputs.
@@ -89,7 +91,7 @@ int main(int argc, char* argv[]) {
 		read_input(input_buffer);
 		//Seperate out meta commands (.help, .tables, etc.) by checking if the first element in the buffer is a dot
 		if (input_buffer->buffer[0] == '.') {
-			switch (do_meta_command(input_buffer)) {
+			switch (do_meta_command(input_buffer, table)) {
 			case (META_COMMAND_SUCCESS):
 				continue;
 			case (META_COMMAND_UNRECOGNIZED_COMMAND):
@@ -102,13 +104,22 @@ int main(int argc, char* argv[]) {
 		switch (prepare_statement(input_buffer, &statement)) {
 		case(PREPARE_SUCCESS):
 			break;
+		case(PREPARE_SYNATAX_ERROR):
+			printf("Syntax error. Could not parse statement.");
+			continue;
 		case(PREPARE_UNRECOGNIZED_STATEMENT):
 			printf("Unrecognized keyword at start of '%s'.\n", input_buffer->buffer);
 			continue;
 		}
 		//If we reached here we have a valid non-meta statement, so execute!
-		execute_statement(&statement);
-		printf("Executed.\n");
+		switch (execute_statement(&statement, table)) {
+		case(EXECUTE_SUCCESS):
+			printf("Executed.\n");
+			break;
+		case(EXECUTE_TABLE_FULL):
+			printf("Error: Table full.\n");
+			break;
+		}
 	}
 	return 0;
 }
