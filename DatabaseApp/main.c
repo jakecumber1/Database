@@ -80,9 +80,12 @@ int main(int argc, char* argv[]) {
 	//main.c will serve as our entry point into the application.
 	//Similar to my MTG Deck builder project, this is my first real C project (first C project ever in fact)
 	//So expect a significant amount of comments (I'd argue too many for anyone familiar with the langauge)
-
-	Table* table = new_table();
-
+	if (argc < 2) {
+		printf("must supply a database filename.\n");
+		exit(EXIT_FAILURE);
+	}
+	char* filename = argv[1];
+	Table* table = db_open(filename);
 	//Putting the input buffer into it's own header and c file is overkill, this is just to get me comfy with the conventions
 	InputBuffer* input_buffer = new_input_buffer();
 	//while loop for handling user inputs.

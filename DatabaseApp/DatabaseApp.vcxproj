@@ -131,14 +131,14 @@
     <ClCompile Include="main.c" />
     <ClCompile Include="MetaCommand.c" />
     <ClCompile Include="Statement.c" />
-    <ClCompile Include="table.c" />
+    <ClCompile Include="Table.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="InputBuffer.h" />
     <ClInclude Include="MetaCommand.h" />
     <ClInclude Include="posix_comp.h" />
     <ClInclude Include="Statement.h" />
-    <ClInclude Include="table.h" />
+    <ClInclude Include="Table.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

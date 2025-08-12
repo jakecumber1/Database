@@ -27,7 +27,7 @@
     <ClCompile Include="Statement.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="table.c">
+    <ClCompile Include="Table.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,7 +44,7 @@
     <ClInclude Include="Statement.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="table.h">
+    <ClInclude Include="Table.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
