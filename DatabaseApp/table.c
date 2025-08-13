@@ -140,13 +140,44 @@ void deserialize_row(void* source, Row* destination) {
 	memcpy(&(destination->email), (uint8_t*)source + EMAIL_OFFSET, EMAIL_SIZE);
 }
 
-void* row_slot(Table* table, uint32_t row_num) {
+void print_row(Row* row) {
+	printf("(%d, %s, %s)\n", row->id, row->username, row->email);
+}
+
+Cursor* table_start(Table* table) {
+	Cursor* cursor = malloc(sizeof(Cursor));
+	cursor->table = table;
+	cursor->row_num = 0;
+	//if there are 0 rows, we're pointing at the end of the table!
+	cursor->end_of_table = (table->num_rows == 0);
+	return cursor;
+}
+
+Cursor* table_end(Table* table) {
+	Cursor* cursor = malloc(sizeof(Cursor));
+	cursor->table = table;
+	cursor->row_num = table->num_rows;
+	cursor->end_of_table = true;
+
+	return cursor;
+}
+void cursor_advance(Cursor* cursor) {
+	if (cursor->end_of_table) {
+		printf("Advance ignored, at end of table");
+		return;
+	}
+	cursor->row_num += 1;
+	if (cursor->row_num >= cursor->table->num_rows) {
+		//we're at the end of the table, so set this to true
+		cursor->end_of_table = true;
+	}
+}
+
+void* cursor_value(Cursor* cursor) {
+	uint32_t row_num = cursor->row_num;
 	uint32_t page_num = row_num / ROWS_PER_PAGE;
-	void* page = get_page(table->pager, page_num);
+	void* page = get_page(cursor->table->pager, page_num);
 	uint32_t row_offset = row_num % ROWS_PER_PAGE;
 	uint32_t byte_offset = row_offset * ROW_SIZE;
 	return (uint8_t*)page + byte_offset;
-}
-void print_row(Row* row) {
-	printf("(%d, %s, %s)\n", row->id, row->username, row->email);
 }

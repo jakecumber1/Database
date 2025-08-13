@@ -2,6 +2,7 @@
 #define TABLE_H
 //Include for uint32_t
 #include <stdint.h>
+#include <stdbool.h>
 #define COLUMN_USERNAME_SIZE 32
 #define COLUMN_EMAIL_SIZE 255
 //A row in the table
@@ -51,9 +52,11 @@ typedef struct {
 	uint32_t file_length;
 	void* pages[TABLE_MAX_PAGES];
 } Pager;
-
+//Initializes pager and opens file.
 Pager* pager_open(const char* filename);
+//Retrieves a page from itself/file (file if cache miss)
 void* get_page(Pager* pager, uint32_t page_num);
+//Flushes page to disk
 void pager_flush(Pager* pager, uint32_t page_num, uint32_t size);
 
 
@@ -62,10 +65,30 @@ typedef struct {
 	Pager* pager;
 } Table;
 
-void* row_slot(Table* table, uint32_t row_num);
+
+//Prints a row to console
 void print_row(Row* row);
+//Initializes table and pager, opens/creates database file
 Table* db_open(const char* filename);
+//Flushes memory to disk, closes db file, and frees table and pager on ".exit".
 void db_close(Table* table);
 
 
+//Represnts a location on the table
+typedef struct {
+	Table* table;
+	uint32_t row_num;
+	bool end_of_table;
+} Cursor;
+//Once we split our implementation into a BTree, this will make inserts, modifications, and deletes much easier.
+
+//Return a cursor pointing at the start of a table
+Cursor* table_start(Table* table);
+
+//Return a cursor at the end of a table
+Cursor* table_end(Table* table);
+//returns pointer to position in table described by the cursor
+void* cursor_value(Cursor* cursor);
+//Advances cursor to the next row
+void cursor_advance(Cursor* cursor);
 #endif

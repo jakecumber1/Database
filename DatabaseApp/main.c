@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-//BOOLS TOO?????????? (check InputBuffer.h for initial amazement)
 #include <stdbool.h>
 #include "InputBuffer.h"
 #include "MetaCommand.h"
