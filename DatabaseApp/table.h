@@ -43,13 +43,16 @@ void deserialize_row(void* source, Row* destination);
 
 #define PAGE_SIZE 4096
 #define TABLE_MAX_PAGES  100
+/*
+* Constants no longer needed since we don't store partial pages anymore
 #define ROWS_PER_PAGE  (PAGE_SIZE / ROW_SIZE)
 #define TABLE_MAX_ROWS  (ROWS_PER_PAGE * TABLE_MAX_PAGES)
-
+*/
 //Create a struct Pager which the table can call to make requests
 typedef struct {
 	int file_descriptor;
 	uint32_t file_length;
+	uint32_t num_pages;
 	void* pages[TABLE_MAX_PAGES];
 } Pager;
 //Initializes pager and opens file.
@@ -57,12 +60,63 @@ Pager* pager_open(const char* filename);
 //Retrieves a page from itself/file (file if cache miss)
 void* get_page(Pager* pager, uint32_t page_num);
 //Flushes page to disk
-void pager_flush(Pager* pager, uint32_t page_num, uint32_t size);
+void pager_flush(Pager* pager, uint32_t page_num);
 
+//I would really like nodes to be in a seperate file, but the way they interact with table and pager force me to place them here
+typedef enum { NODE_INTERNAL, NODE_LEAF } NodeType;
+//We will have to come back and rework this for non int types of data, what if we want to set this up with strings?
+//The below are constants for internal nodes and some for leaf nodes
+#define NODE_TYPE_SIZE sizeof(uint8_t)
+#define NODE_TYPE_OFFSET 0
+#define IS_ROOT_SIZE sizeof(uint8_t)
+#define IS_ROOT_OFFSET NODE_TYPE_SIZE
+#define PARENT_POINTER_SIZE sizeof(uint32_t)
+#define PARENT_POINTER_OFFSET (IS_ROOT_OFFSET + IS_ROOT_SIZE)
+#define COMMON_NODE_HEADER_SIZE (NODE_TYPE_SIZE + IS_ROOT_SIZE + PARENT_POINTER_SIZE)
+
+//And now the constants for leaf ndoes
+#define LEAF_NODE_NUM_CELLS_SIZE sizeof(uint32_t)
+#define LEAF_NODE_NUM_CELLS_OFFSET COMMON_NODE_HEADER_SIZE
+#define LEAF_NODE_HEADER_SIZE (COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE)
+#define LEAF_NODE_KEY_SIZE sizeof(uint32_t)
+#define LEAF_NODE_KEY_OFFSET 0
+#define LEAF_NODE_VALUE_SIZE ROW_SIZE
+#define LEAF_NODE_VALUE_OFFSET (LEAF_NODE_KEY_OFFSET + LEAF_NODE_KEY_SIZE)
+#define LEAF_NODE_CELL_SIZE (LEAF_NODE_KEY_SIZE + LEAF_NODE_VALUE_SIZE)
+#define LEAF_NODE_SPACE_FOR_CELLS (PAGE_SIZE - LEAF_NODE_HEADER_SIZE)
+#define LEAF_NODE_MAX_CELLS (LEAF_NODE_SPACE_FOR_CELLS / LEAF_NODE_CELL_SIZE)
+
+/*From the above constants here's what our leaf node layout will look like
+byte 0: node_type
+1: is_root
+2-6: parent_pointer
+6-9: num_cells
+10-13: key 0
+14-306: value 0
+307-310 key 1
+311-603: value 1
+604-607: key 2
+.....
+3578-3871: value 12
+3871-4095: wasted space
+We leave the space empty to avoid splitting cells between nodes.*/
+
+//Most of the below functions use pointer arithmatic to access the node's keys, values, and metadata.
+
+//Returns the number of cells in the node
+uint32_t* leaf_node_num_cells(void* node);
+//Returns a cell in the node
+void* leaf_node_cell(void* node, uint32_t cell_num);
+//Returns the key for the relevant cell
+uint32_t* leaf_node_key(void* node, uint32_t cell_num);
+//Accesses the relevant cell's value
+void* leaf_node_value(void* node, uint32_t cell_num);
+//Creates the leaf node
+void initialize_leaf_node(void* node);
 
 typedef struct {
-	uint32_t num_rows;
 	Pager* pager;
+	uint32_t root_page_num;
 } Table;
 
 
@@ -77,7 +131,8 @@ void db_close(Table* table);
 //Represnts a location on the table
 typedef struct {
 	Table* table;
-	uint32_t row_num;
+	uint32_t page_num;
+	uint32_t cell_num;
 	bool end_of_table;
 } Cursor;
 //Once we split our implementation into a BTree, this will make inserts, modifications, and deletes much easier.
@@ -91,4 +146,12 @@ Cursor* table_end(Table* table);
 void* cursor_value(Cursor* cursor);
 //Advances cursor to the next row
 void cursor_advance(Cursor* cursor);
+//Inserts a leaf node into the tree
+void leaf_node_insert(Cursor * cursor, uint32_t key, Row * value);
+
+//Prints constant values relevant to leaf nodes
+void print_constants();
+
+//Prints out a leaf node.
+void print_leaf_node(void* node);
 #endif
