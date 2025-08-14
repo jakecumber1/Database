@@ -111,6 +111,10 @@ void* leaf_node_cell(void* node, uint32_t cell_num);
 uint32_t* leaf_node_key(void* node, uint32_t cell_num);
 //Accesses the relevant cell's value
 void* leaf_node_value(void* node, uint32_t cell_num);
+//Returns if the node is a leaf or internal
+NodeType get_node_type(void* node);
+//Sets whether the node is a leaf or internal
+void set_node_type(void* node, NodeType type);
 //Creates the leaf node
 void initialize_leaf_node(void* node);
 
@@ -140,14 +144,22 @@ typedef struct {
 //Return a cursor pointing at the start of a table
 Cursor* table_start(Table* table);
 
+/*
+* Depreciated, functionality replaced with table_find
 //Return a cursor at the end of a table
 Cursor* table_end(Table* table);
+*/
+
+//Returns position of a given key or where the key should be inserted.
+Cursor* table_find(Table* table, uint32_t key);
 //returns pointer to position in table described by the cursor
 void* cursor_value(Cursor* cursor);
 //Advances cursor to the next row
 void cursor_advance(Cursor* cursor);
 //Inserts a leaf node into the tree
 void leaf_node_insert(Cursor * cursor, uint32_t key, Row * value);
+//Finds leaf node on a page with binary search.
+Cursor* leaf_node_find(Table* table, uint32_t page_num, uint32_t key);
 
 //Prints constant values relevant to leaf nodes
 void print_constants();
