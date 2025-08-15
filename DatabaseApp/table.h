@@ -59,6 +59,8 @@ typedef struct {
 Pager* pager_open(const char* filename);
 //Retrieves a page from itself/file (file if cache miss)
 void* get_page(Pager* pager, uint32_t page_num);
+//Get an unused page for node splitting
+uint32_t get_unused_page_num(Pager* pager);
 //Flushes page to disk
 void pager_flush(Pager* pager, uint32_t page_num);
 
@@ -101,6 +103,11 @@ byte 0: node_type
 3871-4095: wasted space
 We leave the space empty to avoid splitting cells between nodes.*/
 
+//Constants for splitting and inserting leaf nodes
+#define LEAF_NODE_RIGHT_SPLIT_COUNT ((LEAF_NODE_MAX_CELLS + 1) / 2)
+//If right gets an even number of cells, this will get that number + 1
+#define LEAF_NODE_LEFT_SPLIT_COUNT ((LEAF_NODE_MAX_CELLS + 1) - LEAF_NODE_RIGHT_SPLIT_COUNT)
+
 //Most of the below functions use pointer arithmatic to access the node's keys, values, and metadata.
 
 //Returns the number of cells in the node
@@ -118,11 +125,65 @@ void set_node_type(void* node, NodeType type);
 //Creates the leaf node
 void initialize_leaf_node(void* node);
 
+//Constants for internal nodes
+#define INTERNAL_NODE_NUM_KEYS_SIZE sizeof(uint32_t)
+#define INTERNAL_NODE_NUM_KEYS_OFFSET COMMON_NODE_HEADER_SIZE
+#define INTERNAL_NODE_RIGHT_CHILD_SIZE sizeof(uint32_t)
+#define INTERNAL_NODE_RIGHT_CHILD_OFFSET (INTERNAL_NODE_NUM_KEYS_OFFSET + INTERNAL_NODE_NUM_KEYS_SIZE)
+#define INTERNAL_NODE_HEADER_SIZE (COMMON_NODE_HEADER_SIZE + INTERNAL_NODE_NUM_KEYS_SIZE + INTERNAL_NODE_RIGHT_CHILD_SIZE)
+//Internal node body layout
+#define INTERNAL_NODE_KEY_SIZE sizeof(uint32_t)
+#define INTERNAL_NODE_CHILD_SIZE sizeof(uint32_t)
+#define INTERNAL_NODE_CELL_SIZE (INTERNAL_NODE_CHILD_SIZE + INTERNAL_NODE_KEY_SIZE)
+
+/*So from the above constants this is what our internal layout looks like
+byte 0: node_type
+byte 1: is_root
+2-6 parent_pointer
+6-9 num_keys
+10-13 right child pointer
+14-17 child pointer 0
+18-21 key 0
+22-25 child pointer 1
+26-29 key 1
+....
+4086-4089 child pointer 509
+4090-4093 key 509
+4094-4095 wasted space
+
+this is a *ridiculous* growth rate, 3 layers deep is about 550 gb of data total,
+but since we only need to access 4 disk pages total (root + 2 internals + 1 leaf) we only have to load
+16kb of memory to find our key (4 kb per node).
+*/
+//Gets num of keys in internal node
+uint32_t* internal_node_num_keys(void* node);
+//Gets the right child of the internal node
+uint32_t* internal_node_right_child(void* node);
+//Gets a cell within the internal node
+uint32_t* internal_node_cell(void* node, uint32_t cell_num);
+//Gets a numbered child within the internal node
+uint32_t* internal_node_child(void* node, uint32_t child_num);
+//Gets a key within the internal node.
+uint32_t* internal_node_key(void* node, uint32_t key_num);
+//Initializes internal node
+initialize_internal_node(void* node);
+
+
+//Returns the maximum key within a node
+uint32_t get_node_max_key(void* node);
+
+//determines if a node is the root
+bool is_node_root(void* node);
+//sets the node as the root or not
+void set_node_root(void* node, bool is_root);
+
 typedef struct {
 	Pager* pager;
 	uint32_t root_page_num;
 } Table;
 
+//Function for creating a new root in our btree
+void create_new_root(Table* table, uint32_t right_child_page_num);
 
 //Prints a row to console
 void print_row(Row* row);
@@ -157,13 +218,24 @@ void* cursor_value(Cursor* cursor);
 //Advances cursor to the next row
 void cursor_advance(Cursor* cursor);
 //Inserts a leaf node into the tree
-void leaf_node_insert(Cursor * cursor, uint32_t key, Row * value);
+void leaf_node_insert(Cursor * cursor, uint32_t key, Row* value);
+//Splits a full node into two and inserts a key
+void leaf_node_split_and_insert(Cursor* cursor, uint32_t key, Row* value);
 //Finds leaf node on a page with binary search.
 Cursor* leaf_node_find(Table* table, uint32_t page_num, uint32_t key);
 
 //Prints constant values relevant to leaf nodes
 void print_constants();
 
+/*
+* depreciated, replaced by print_tree
 //Prints out a leaf node.
 void print_leaf_node(void* node);
+*/
+
+//adds an number of indents equal to level
+void indent(uint32_t level);
+
+void print_tree(Pager* pager, uint32_t page_num, uint32_t indentation_level);
+
 #endif

@@ -14,7 +14,7 @@ void print_prompt() { printf("db > "); }
 ssize_t getline(char** lineptr, size_t* n, FILE* stream) {
 	if (!lineptr || !n || !stream) return -1;
 
-	//POS number of characters read, C our varialbe for holding each character from the stream
+	//POS is the number of characters read, C is our variable for holding each character from the stream
 	size_t pos = 0;
 	int c;
 
