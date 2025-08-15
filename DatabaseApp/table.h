@@ -221,8 +221,10 @@ void cursor_advance(Cursor* cursor);
 void leaf_node_insert(Cursor * cursor, uint32_t key, Row* value);
 //Splits a full node into two and inserts a key
 void leaf_node_split_and_insert(Cursor* cursor, uint32_t key, Row* value);
-//Finds leaf node on a page with binary search.
+//Finds leaf node with key using binary search.
 Cursor* leaf_node_find(Table* table, uint32_t page_num, uint32_t key);
+//Finds internal node with a given key using binary search.
+Cursor* internal_node_find(Table* table, uint32_t page_num, uint32_t key);
 
 //Prints constant values relevant to leaf nodes
 void print_constants();
