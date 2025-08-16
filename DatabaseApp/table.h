@@ -79,7 +79,11 @@ typedef enum { NODE_INTERNAL, NODE_LEAF } NodeType;
 //And now the constants for leaf ndoes
 #define LEAF_NODE_NUM_CELLS_SIZE sizeof(uint32_t)
 #define LEAF_NODE_NUM_CELLS_OFFSET COMMON_NODE_HEADER_SIZE
-#define LEAF_NODE_HEADER_SIZE (COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE)
+//Depreciated constant
+//#define LEAF_NODE_HEADER_SIZE (COMMON_NODE_HEADER_SIZE + LEAF_NODE_NUM_CELLS_SIZE)
+#define LEAF_NODE_NEXT_LEAF_SIZE sizeof(uint32_t)
+#define LEAF_NODE_NEXT_LEAF_OFFSET (LEAF_NODE_NUM_CELLS_OFFSET + LEAF_NODE_NUM_CELLS_SIZE)
+#define LEAF_NODE_HEADER_SIZE (COMMON_NODE_HEADER_SIZE + (LEAF_NODE_NUM_CELLS_SIZE + LEAF_NODE_NEXT_LEAF_SIZE))
 #define LEAF_NODE_KEY_SIZE sizeof(uint32_t)
 #define LEAF_NODE_KEY_OFFSET 0
 #define LEAF_NODE_VALUE_SIZE ROW_SIZE
@@ -135,6 +139,7 @@ void initialize_leaf_node(void* node);
 #define INTERNAL_NODE_KEY_SIZE sizeof(uint32_t)
 #define INTERNAL_NODE_CHILD_SIZE sizeof(uint32_t)
 #define INTERNAL_NODE_CELL_SIZE (INTERNAL_NODE_CHILD_SIZE + INTERNAL_NODE_KEY_SIZE)
+#define INTERNAL_NODE_MAX_CELLS 3
 
 /*So from the above constants this is what our internal layout looks like
 byte 0: node_type
@@ -155,6 +160,11 @@ this is a *ridiculous* growth rate, 3 layers deep is about 550 gb of data total,
 but since we only need to access 4 disk pages total (root + 2 internals + 1 leaf) we only have to load
 16kb of memory to find our key (4 kb per node).
 */
+
+
+//Constant which represents an invalid page number that is the child of every empty node
+#define INVALID_PAGE_NUM UINT32_MAX
+
 //Gets num of keys in internal node
 uint32_t* internal_node_num_keys(void* node);
 //Gets the right child of the internal node
@@ -170,7 +180,7 @@ initialize_internal_node(void* node);
 
 
 //Returns the maximum key within a node
-uint32_t get_node_max_key(void* node);
+uint32_t get_node_max_key(Pager* pager, void* node);
 
 //determines if a node is the root
 bool is_node_root(void* node);
@@ -223,8 +233,12 @@ void leaf_node_insert(Cursor * cursor, uint32_t key, Row* value);
 void leaf_node_split_and_insert(Cursor* cursor, uint32_t key, Row* value);
 //Finds leaf node with key using binary search.
 Cursor* leaf_node_find(Table* table, uint32_t page_num, uint32_t key);
+//Gets a leaf to the right of our current leaf node
+uint32_t* leaf_node_next_leaf(void* node);
 //Finds internal node with a given key using binary search.
 Cursor* internal_node_find(Table* table, uint32_t page_num, uint32_t key);
+//Return index of child which should contain key
+uint32_t internal_node_find_child(void* node, uint32_t key);
 
 //Prints constant values relevant to leaf nodes
 void print_constants();
@@ -239,5 +253,15 @@ void print_leaf_node(void* node);
 void indent(uint32_t level);
 
 void print_tree(Pager* pager, uint32_t page_num, uint32_t indentation_level);
+//returns a reference to a nodes parents
+uint32_t* node_parent(void* node);
 
+//Updates internal node's key
+void update_internal_node_key(void* node, uint32_t old_key, uint32_t new_key);
+//Forward declared to reduce code duping with internal_node_insert
+
+//Creates a sibling node to store half the internal node's keys.
+void internal_node_split_and_insert(Table* table, uint32_t parent_page_num, uint32_t child_page_num);
+//Inserts into an internal node.
+void internal_node_insert(Table* table, uint32_t parent_page_num, uint32_t child_page_num);
 #endif
