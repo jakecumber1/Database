@@ -44,11 +44,11 @@ Pager* pager_open(const char* filename) {
 	Pager* pager = malloc(sizeof(Pager));
 	pager->file_descriptor = fd;
 	pager->file_length = file_length;
-	pager->num_pages = (file_length / PAGE_SIZE);
+	pager->num_pages = ((file_length + PAGE_SIZE - 1) / PAGE_SIZE);
 
-	if (file_length % PAGE_SIZE != 0) {
-		//Giving me a headache, allow for parital pages
-		pager->num_pages += 1;
+	if (file_length < 0) {
+		printf("db file length invalid. corrupt file.\n");
+		exit(EXIT_FAILURE);
 	}
 
 	for (uint32_t i = 0; i < TABLE_MAX_PAGES; i++) {

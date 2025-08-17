@@ -1,15 +1,42 @@
 #include "MetaCommand.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 //Function for handling meta commands, right now this simple string comparison will work since we only have one command
 MetaCommandResult do_meta_command(InputBuffer* input_buffer, Table* table) {
+	//In C, switching only works on stuff like int, enum, and chars, not strings, so we have to keep this as if else
 	if (strcmp(input_buffer->buffer, ".exit") == 0) {
 		//we're exiting, so free the buffer
 		close_input_buffer(input_buffer);
-		db_close(table);
+		if (table != NULL) {
+			db_close(table);
+		}
 		//You might want to make this a successful meta command
 		//Don't, because then the program will keep running
 		exit(EXIT_SUCCESS);
+	}
+	else if (strncmp(input_buffer->buffer, ".open ", 6) == 0) {
+		char* filename = input_buffer->buffer + 6;
+		filename[strcspn(filename, "\n")] = 0;
+		if (table != NULL) {
+			printf("Closing currently open database file...\n");
+			db_close(table);
+			table = NULL;
+		}
+		table = db_open(filename);
+		printf("Opened database file %s\n", filename);
+		return META_COMMAND_SUCCESS;
+	}
+	else if (strcmp(input_buffer->buffer, ".close") == 0) {
+		if (table == NULL) {
+			printf("No database file currently open.\n");
+		}
+		else {
+			db_close(table);
+			table = NULL;
+			printf("Closed database.\n");
+		}
+		return META_COMMAND_SUCCESS;
 	}
 	else if (strcmp(input_buffer->buffer, ".constants") == 0) {
 		printf("Constants:\n");

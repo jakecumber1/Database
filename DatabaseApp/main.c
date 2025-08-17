@@ -79,12 +79,11 @@ int main(int argc, char* argv[]) {
 	//main.c will serve as our entry point into the application.
 	//Similar to my MTG Deck builder project, this is my first real C project (first C project ever in fact)
 	//So expect a significant amount of comments (I'd argue too many for anyone familiar with the langauge)
-	if (argc < 2) {
-		printf("must supply a database filename.\n");
-		exit(EXIT_FAILURE);
+	Table* table = NULL;
+	if (argc >= 2) {
+		char* filename = argv[1];
+		table = db_open(filename);
 	}
-	char* filename = argv[1];
-	Table* table = db_open(filename);
 	//Putting the input buffer into it's own header and c file is overkill, this is just to get me comfy with the conventions
 	InputBuffer* input_buffer = new_input_buffer();
 	//while loop for handling user inputs.
@@ -130,6 +129,8 @@ int main(int argc, char* argv[]) {
 		case(EXECUTE_DUPLICATE_KEY):
 			printf("Error: Duplicate key.\n");
 			break;
+		case(EXECUTE_NO_TABLE):
+			printf("No table to perform statement!");
 		}
 	}
 	return 0;

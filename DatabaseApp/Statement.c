@@ -46,6 +46,9 @@ PrepareResult prepare_insert(InputBuffer* input_buffer, Statement* statement) {
 	return PREPARE_SUCCESS;
 }
 ExecuteResult execute_insert(Statement* statement, Table* table) {
+	if (table == NULL) {
+		return EXECUTE_NO_TABLE;
+	}
 	Row* row_to_insert = &(statement->row_to_insert);
 	uint32_t key_to_insert = row_to_insert->id;
 	Cursor* cursor = table_find(table, key_to_insert);
@@ -67,6 +70,9 @@ ExecuteResult execute_insert(Statement* statement, Table* table) {
 	return EXECUTE_SUCCESS;
 }
 ExecuteResult execute_select(Statement* statement, Table* table) {
+	if (table == NULL) {
+		return EXECUTE_NO_TABLE;
+	}
 	Cursor* cursor = table_start(table);
 	Row row;
 	while(!(cursor->end_of_table)) {
