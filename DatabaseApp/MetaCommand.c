@@ -16,16 +16,13 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer, Table* table) {
 		exit(EXIT_SUCCESS);
 	}
 	else if (strncmp(input_buffer->buffer, ".open ", 6) == 0) {
-		char* filename = input_buffer->buffer + 6;
-		filename[strcspn(filename, "\n")] = 0;
 		if (table != NULL) {
 			printf("Closing currently open database file...\n");
 			db_close(table);
 			table = NULL;
 		}
-		table = db_open(filename);
-		printf("Opened database file %s\n", filename);
-		return META_COMMAND_SUCCESS;
+		//HAve to handle opening in main 
+		return META_COMMAND_OPEN_SUCCESS;
 	}
 	else if (strcmp(input_buffer->buffer, ".close") == 0) {
 		if (table == NULL) {
@@ -36,7 +33,7 @@ MetaCommandResult do_meta_command(InputBuffer* input_buffer, Table* table) {
 			table = NULL;
 			printf("Closed database.\n");
 		}
-		return META_COMMAND_SUCCESS;
+		return META_COMMAND_CLOSE_SUCCESS;
 	}
 	else if (strcmp(input_buffer->buffer, ".constants") == 0) {
 		printf("Constants:\n");

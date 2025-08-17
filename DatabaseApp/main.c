@@ -98,6 +98,15 @@ int main(int argc, char* argv[]) {
 			case (META_COMMAND_UNRECOGNIZED_COMMAND):
 				printf("Unrecognized command '%s' .\n", input_buffer->buffer);
 				continue;
+			case (META_COMMAND_CLOSE_SUCCESS):
+				table = NULL;
+				continue;
+			case (META_COMMAND_OPEN_SUCCESS):
+				char* filename = input_buffer->buffer + 6;
+				filename[strcspn(filename, "\n")] = 0;
+				table = db_open(filename);
+				printf("Opened database file %s\n", filename);
+				continue;
 			}
 		}
 		//Check if input is a non-meta valid statement, if not restart the loop and print the error.
@@ -131,6 +140,7 @@ int main(int argc, char* argv[]) {
 			break;
 		case(EXECUTE_NO_TABLE):
 			printf("No table to perform statement!");
+			break;
 		}
 	}
 	return 0;
