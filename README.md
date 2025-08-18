@@ -44,10 +44,10 @@ Prints out a representation of the B-Tree used to store the database keys.
 
 Statements are commands given by the user which access or modify the database file itself, there are currently only two statements in this build.
 
-### insert int string strin>
+### insert int string string
 
-Inserts a row of data into the database matching the pattern <int> <string> <string>. This is meant to represent an employee entry in a database with the format (id, name, email). The name must be under 33 characters long (remember, no spaces) and the email must be under 256 characters. If there is no database open or an invalid set of arguments is given, insert will abort. Negative or duplicate ids cannot be inserted.
+Inserts a row of data into the database matching the pattern (int string string). This is meant to represent an employee entry in a database with the format (id, name, email). The name must be under 33 characters long (remember, no spaces) and the email must be under 256 characters. If there is no database open or an invalid set of arguments is given, insert will abort. Negative or duplicate ids cannot be inserted.
 
-### select optional: int optional int-int
+### select optional: int optional: int-int
 
 Prints the database when no arguments are given. If one integer is given, it will return a row with the id matching the given integer (if it exists). If a dash and second integer are given, for example: select 1-10, the application will print all rows it can find in between (and including) 1-10. If the database is empty, isn't open, or an invalid range is given, select will abort.
