@@ -69,28 +69,79 @@ ExecuteResult execute_insert(Statement* statement, Table* table) {
 
 	return EXECUTE_SUCCESS;
 }
-ExecuteResult execute_select(Statement* statement, Table* table) {
+ExecuteResult execute_select(Statement* statement, InputBuffer* input_buffer, Table* table) {
+
 	if (table == NULL) {
 		return EXECUTE_NO_TABLE;
 	}
-	Cursor* cursor = table_start(table);
-	Row row;
-	while(!(cursor->end_of_table)) {
-		deserialize_row(cursor_value(cursor), &row);
-		print_row(&row);
-		cursor_advance(cursor);
+	char* args = strchr(input_buffer->buffer, ' ');
+	if (args != NULL) {
+		args++;
+		if (*args == '\0') {
+			args = NULL;
+		}
 	}
-	//remember, created cursor, we must free it.
-	free(cursor);
-	return EXECUTE_SUCCESS;
+	if (args == NULL) {
+	//case 1: select everything in our database
+		Cursor* cursor = table_start(table);
+		Row row;
+		while (!(cursor->end_of_table)) {
+			deserialize_row(cursor_value(cursor), &row);
+			print_row(&row);
+			cursor_advance(cursor);
+		}
+		//remember, created cursor, we must free it.
+		free(cursor);
+		return EXECUTE_SUCCESS;
+	}
+	//Case 2 and 3: we are either printing 1 row or a range of rows
+	char* dash = strchr(args, '-');
+	if (dash == NULL) {
+		int id = atoi(args);
+		if (id < 0) {
+			return EXECUTE_NEGATIVE_ID;
+		}
+		Cursor* cursor = table_find(table, id);
+		Row row;
+		deserialize_row(cursor_value(cursor), &row);
+		if (row.id == id) {
+			print_row(&row);
+		}
+		else {
+			printf("Row with id %u not found.\n", id);
+		}
+		free(cursor);
+		return(EXECUTE_SUCCESS);
+	}
+	//split the string into 2
+	*dash = '\0';
+	int id1 = atoi(args);
+	int id2 = atoi(dash + 1);
+	if (id1 < 0 || id2 < 0) {
+		return EXECUTE_NEGATIVE_ID;
+	}
+	if (id2 < id1) {
+		printf("Invalid range %d-%d.\n", id1, id2);
+		return(EXECUTE_SUCCESS);
+	}
+	for (uint32_t i = id1; i <= id2; i++) {
+		Row row;
+		Cursor* cursor = table_find(table, i);
+		deserialize_row(cursor_value(cursor), &row);
+		if (row.id == i) {
+			print_row(&row);
+		}
+		free(cursor);
+	}
+	return (EXECUTE_SUCCESS);
 }
 
-ExecuteResult execute_statement(Statement* statement, Table* table) {
+ExecuteResult execute_statement(Statement* statement, InputBuffer* input_buffer, Table* table) {
 	switch (statement->type) {
 	case(STATEMENT_INSERT):
 		return execute_insert(statement, table);
 	case(STATEMENT_SELECT):
-		return execute_select(statement, table);
+		return execute_select(statement, input_buffer, table);
 	}
 
 }

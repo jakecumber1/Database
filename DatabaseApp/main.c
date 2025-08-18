@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
 			continue;
 		}
 		//If we reached here we have a valid non-meta statement, so execute!
-		switch (execute_statement(&statement, table)) {
+		switch (execute_statement(&statement, input_buffer, table)) {
 		case(EXECUTE_SUCCESS):
 			printf("Executed.\n");
 			break;
@@ -139,7 +139,10 @@ int main(int argc, char* argv[]) {
 			printf("Error: Duplicate key.\n");
 			break;
 		case(EXECUTE_NO_TABLE):
-			printf("No table to perform statement!");
+			printf("No table to perform statement!\n");
+			break;
+		case(EXECUTE_NEGATIVE_ID):
+			printf("Negative id was given for selection\n");
 			break;
 		}
 	}
